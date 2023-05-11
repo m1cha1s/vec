@@ -25,13 +25,10 @@ SOFTWARE.
 #ifndef VEC_H
 #define VEC_H
 
-#ifndef NO_STD
-#include <stdlib.h>
-#endif
+#include "alloc/alloc.h"
 
 typedef struct {
-    void* (*malloc)(unsigned long long);
-    void (*free)(void*);
+    alloc vec_alloc;
     
     unsigned int capacity; // The bytes available in the current buffer
     unsigned int count; // The bytes used by the current buffer
@@ -39,13 +36,12 @@ typedef struct {
     void** data;
 } vec;
 
-vec* vec_new(void*(*vec_malloc)(unsigned long long), void(*vec_free)(void*), unsigned int growth_factor) {
-    vec* v = (vec *)vec_malloc(sizeof(vec));
+vec* vec_new(alloc vec_alloc, unsigned int growth_factor) {
+    vec* v = (vec *)vec_alloc.malloc(sizeof(vec), vec_alloc.meta);
     if (!v) 
         return (vec*)0;
     
-    v->malloc = vec_malloc;
-    v->free = vec_free;
+    v->vec_alloc = vec_alloc;
     v->growth_factor = growth_factor;
     v->data = (void**)0;
     v->capacity = 0;
@@ -57,20 +53,20 @@ vec* vec_new(void*(*vec_malloc)(unsigned long long), void(*vec_free)(void*), uns
 int vec_grow(vec* v) {
     if (v->capacity == 0) {
         v->capacity = 8;
-        v->data = (void**)v->malloc(v->capacity*sizeof(void*));
+        v->data = (void**)v->vec_alloc.malloc(v->capacity*sizeof(void*), v->vec_alloc.meta);
         return 0;
     }
 
     v->capacity*=v->growth_factor;
     
-    void** new_data = (void**)v->malloc(v->capacity*sizeof(void*));
+    void** new_data = (void**)v->vec_alloc.malloc(v->capacity*sizeof(void*), v->vec_alloc.meta);
     if (!new_data)
         return -1;
 
     for (unsigned int i = 0; i < v->count-1; i++)
         new_data[i] = v->data[i];
 
-    v->free(v->data);
+    v->vec_alloc.free(v->data, v->vec_alloc.meta);
     v->data = new_data;
 
     return 0;
@@ -81,14 +77,14 @@ int vec_try_shrink(vec* v) {
         return -2; // There is no need to shrink the vec
 
     unsigned int new_capacity = v->capacity/v->growth_factor;
-    void** new_data = (void**)v->malloc(new_capacity*sizeof(void*));
+    void** new_data = (void**)v->vec_alloc.malloc(new_capacity*sizeof(void*), v->vec_alloc.meta);
     if (!new_data)
         return -1;
 
     for (int i = 0; i < v->count; i++)
         new_data[i] = v->data[i];
 
-    v->free(v->data);
+    v->vec_alloc.free(v->data, v->vec_alloc.meta);
     v->data = new_data;
     v->capacity = new_capacity;
 
@@ -143,8 +139,8 @@ void vec_clear(vec* v, void(*item_free)(void*)) {
 
 
 void vec_free(vec* v) {
-    v->free(v->data);
-    v->free(v);
+    v->vec_alloc.free(v->data, v->vec_alloc.meta);
+    v->vec_alloc.free(v, v->vec_alloc.meta);
 }
 
 void vec_clear_free(vec*v, void(*item_free)(void*)) {
@@ -155,12 +151,12 @@ void vec_clear_free(vec*v, void(*item_free)(void*)) {
 #ifndef NO_STD
 
 vec* vec_new_default() {
-    return vec_new(malloc, free, 8);
+    return vec_new(std_alloc, 8);
 }
 
 void vec_clear_default(vec* v) {
     for (int i = 0; i < v->count; i++)
-        free(v->data[i]);
+        std_alloc.free(v->data[i], v->vec_alloc.meta);
 }
 
 void vec_clear_free_default(vec*v) {

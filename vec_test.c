@@ -1,12 +1,13 @@
 #include <stdio.h>
 
 #include "vec.h"
+#include "alloc/alloc.h"
 
 int main() {
     vec* v = vec_new_default();
 
     for (int i = 0; i < 10; i ++) {
-        int* nya = (int*)malloc(sizeof(int));
+        int* nya = (int*)std_alloc.malloc(sizeof(int), v->vec_alloc.meta);
         *nya = 69 + i;
 
         vec_add(v, nya);
