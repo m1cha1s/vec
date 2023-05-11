@@ -132,9 +132,9 @@ void* vec_remove(vec* v, unsigned int idx) {
     return val;
 }
 
-void vec_clear(vec* v, void(*item_free)(void*)) {
+void vec_clear(vec* v, alloc item_alloc) {
     for (int i = 0; i < v->count; i++)
-        item_free(v->data[i]);
+        item_alloc.free(v->data[i], item_alloc.meta);
 }
 
 
@@ -143,8 +143,8 @@ void vec_free(vec* v) {
     v->vec_alloc.free(v, v->vec_alloc.meta);
 }
 
-void vec_clear_free(vec*v, void(*item_free)(void*)) {
-    vec_clear(v, item_free);
+void vec_clear_free(vec*v, alloc item_alloc) {
+    vec_clear(v, item_alloc);
     vec_free(v);
 }
 

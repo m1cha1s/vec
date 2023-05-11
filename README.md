@@ -11,7 +11,7 @@ Error codes:
 
 ### Methods always available
 
-#### `vec* vec_new(void*(*vec_malloc)(unsigned long long), void(*vec_free)(void*), unsigned int growth_factor);`
+#### `vec* vec_new(alloc vec_alloc, unsigned int growth_factor);`
 Create new vec with custom allocator and growth factor
 
 #### `int vec_grow(vec* v);`
@@ -32,13 +32,13 @@ Get vec lenght
 #### `void* vec_remove(vec* v, unsigned int idx);`
 Remove item from vec
 
-#### `void vec_clear(vec* v, void(*item_free)(void*));`
+#### `void vec_clear(vec* v, alloc item_alloc);`
 Free items with custom allocator
 
 #### `void vec_free(vec* v);`
 Free the vec itself(not its items)
 
-#### `void vec_clear_free(vec*v, void(*item_free)(void*));`
+#### `void vec_clear_free(vec*v, alloc item_alloc);`
 Free everything(also items inside)
 
 
